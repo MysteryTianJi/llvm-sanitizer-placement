@@ -1,0 +1,215 @@
+% ==========================================
+% Part 1: Sanitizer (Sanitizers & Memory Safety)
+% ==========================================
+
+@inproceedings{song2019sok,
+  title={{SoK}: Sanitizing for Security},
+  author={Song, Dokyung and Lettner, Julian and Rajasekaran, Prabhu and Na, Yeoul and Volckaert, Stijn and Larsen, Per and Franz, Michael},
+  booktitle={2019 IEEE Symposium on Security and Privacy (SP)},
+  pages={1275--1295},
+  year={2019},
+  organization={IEEE},
+  doi={10.1109/SP.2019.00010}
+}
+
+@inproceedings{vintila2025evaluating,
+  title={Evaluating the Effectiveness of Memory Safety Sanitizers},
+  author={Vintila, E. Q. and Zieris, P. and Horsch, J.},
+  booktitle={2025 IEEE Symposium on Security and Privacy (SP)},
+  pages={774--792},
+  year={2025},
+  organization={IEEE},
+  doi={10.1109/SP61157.2025.00088}
+}
+
+@inproceedings{serebryany2012asan,
+  title={{AddressSanitizer}: A Fast Address Sanity Checker},
+  author={Serebryany, Konstantin and Bruening, Derek and Potapenko, Alexander and Vyukov, Dmitry},
+  booktitle={Proceedings of the 2012 USENIX Conference on Annual Technical Conference (USENIX ATC'12)},
+  pages={28},
+  year={2012},
+  organization={USENIX Association}
+}
+
+@misc{ubsan_docs,
+  title={{UndefinedBehaviorSanitizer}},
+  author={{LLVM Team}},
+  howpublished={\url{https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html}},
+  note={Accessed: 2025}
+}
+
+% Highlighted Project: LiteRSan
+@article{xia2025litersan,
+  title={{LiteRSan}: Lightweight Memory Safety Via {Rust}-specific Program Analysis and Selective Instrumentation},
+  author={Xia, Tianrou and Huang, Kaiming and Yu, Dongyeon and Jeon, Yuseok and Zhou, Jie and Wu, Dinghao and Kim, Taegyu},
+  journal={arXiv preprint arXiv:2509.16389},
+  year={2025}
+}
+
+@misc{softboundcets_web,
+  title={{SoftBoundCETS} Project},
+  howpublished={\url{https://drops.dagstuhl.de/storage/00lipics/lipics-vol032-snapl2015/LIPIcs.SNAPL.2015.190/LIPIcs.SNAPL.2015.190.pdf}},
+  note={Accessed: 2025}
+}
+
+@inproceedings{nagarakatte2009softbound,
+  title={{SoftBound}: Highly Compatible and Complete Spatial Memory Safety for {C}},
+  author={Nagarakatte, Santosh and Zhao, Jianzhou and Martin, Milo MK and Zdancewic, Steve},
+  booktitle={Proceedings of the 30th ACM SIGPLAN Conference on Programming Language Design and Implementation (PLDI '09)},
+  pages={245--258},
+  year={2009},
+  publisher={ACM},
+  doi={10.1145/1542476.1542504}
+}
+
+@article{nagarakatte2010cets,
+  title={{CETS}: Compiler Enforced Temporal Safety for {C}},
+  author={Nagarakatte, Santosh and Zhao, Jianzhou and Martin, Milo MK and Zdancewic, Steve},
+  journal={SIGPLAN Not.},
+  volume={45},
+  number={8},
+  pages={31--40},
+  year={2010},
+  publisher={ACM},
+  doi={10.1145/1837855.1806657}
+}
+
+% ==========================================
+% Part 2: LLVM (Compiler Infrastructure)
+% ==========================================
+
+@misc{llvm_passes,
+  title={{LLVM} Analysis and Transformation Passes},
+  author={{LLVM Project}},
+  howpublished={\url{https://llvm.org/docs/Passes.html}},
+  note={Accessed: 2025}
+}
+
+@misc{llvm_pipeline,
+  title={{LLVM} Machine Optimization Pipeline},
+  author={{LLVM Project}},
+  howpublished={\url{https://llvm.org/docs/GlobalISel/Pipeline.html}},
+  note={Accessed: 2025}
+}
+
+@misc{llvm_github,
+  title={{LLVM} Project Repository},
+  author={{LLVM Project}},
+  howpublished={\url{https://github.com/llvm/llvm-project}},
+  note={Accessed: 2025}
+}
+
+@inproceedings{johnson2017thinlto,
+  title={{ThinLTO}: Scalable and Incremental {LTO}},
+  author={Johnson, Teresa and Amini, Mehdi and Li, Xinliang David},
+  booktitle={Proceedings of the 2017 International Symposium on Code Generation and Optimization (CGO '17)},
+  pages={111--121},
+  year={2017},
+  publisher={IEEE Press}
+}
+
+% ==========================================
+% Part 3: Security (General & Theory)
+% ==========================================
+
+@article{zhou2023fatpointers,
+  title={Fat Pointers for Temporal Memory Safety of {C}},
+  author={Zhou, Jie and Criswell, John and Hicks, Michael},
+  journal={Proc. ACM Program. Lang.},
+  volume={7},
+  number={OOPSLA1},
+  pages={1--32},
+  articleno={86},
+  year={2023},
+  publisher={ACM},
+  doi={10.1145/3586038}
+}
+
+@inproceedings{szekeres2013eternal,
+  title={{SoK}: Eternal War in Memory},
+  author={Szekeres, Laszlo and Payer, Mathias and Wei, Tao and Song, Dawn},
+  booktitle={Proceedings of the 2013 IEEE Symposium on Security and Privacy (SP '13)},
+  pages={48--62},
+  year={2013},
+  organization={IEEE},
+  doi={10.1109/SP.2013.13}
+}
+
+@misc{kern2024secure,
+  title={Secure by Design at {Google}},
+  author={Kern, Christoph},
+  year={2024},
+  howpublished={\url{https://research.google/pubs/secure-by-design-at-google/}},
+  organization={Google Security Engineering}
+}
+
+% ==========================================
+% Part 4: Misc (Compiler Bugs & Optimization)
+% ==========================================
+
+@article{isemann2023dontlookub,
+  title={Don’t Look {UB}: Exposing Sanitizer-Eliding Compiler Optimizations},
+  author={Isemann, Raphael and Giuffrida, Cristiano and Bos, Herbert and van der Kouwe, Erik and von Gleissenthall, Klaus},
+  journal={Proc. ACM Program. Lang.},
+  volume={7},
+  number={PLDI},
+  articleno={143},
+  pages={1--21},
+  year={2023},
+  publisher={ACM}
+}
+
+@inproceedings{xu2023silent,
+  title={Silent Bugs Matter: A Study of Compiler-Introduced Security Bugs},
+  author={Xu, Jianhao and Lu, Kangjie and Du, Zhengjie and Ding, Zhu and Li, Linke and Wu, Qiushi and Payer, Mathias and Mao, Bing},
+  booktitle={Proceedings of the 32nd USENIX Security Symposium (SEC '23)},
+  pages={3655--3672},
+  year={2023},
+  organization={USENIX Association}
+}
+
+% ==========================================
+% Part 5: CNKI (Chinese References)
+% ==========================================
+
+@article{wu2018memorysafety,
+  title={C/C++程序内存安全漏洞检测技术综述},
+  author={武成岗 and 张兆岩 and 霍玮 and 其他},
+  journal={计算机学报},
+  volume={41},
+  number={00},
+  pages={1--25},
+  year={2018},
+  note={Survey of Memory Safety Vulnerability Detection Techniques for C/C++ Programs}
+}
+
+@article{jia2015compiler,
+  title={基于编译器的软件安全防护技术综述},
+  author={贾周阳 and 顾大权 and 蔡军},
+  journal={计算机科学},
+  volume={42},
+  number={11},
+  pages={10--16},
+  year={2015},
+  note={Survey of Compiler-based Software Security Protection Technologies}
+}
+
+@article{wang2021llvm,
+  title={基于{LLVM}的程序分析与优化技术综述},
+  author={赵荣彩 and 侯永生 and 其他},
+  journal={软件学报},
+  volume={32},
+  number={00},
+  year={2021},
+  note={Survey of Program Analysis and Optimization Based on LLVM}
+}
+
+@article{zhang2022fuzzing,
+  title={软件漏洞自动化挖掘技术综述},
+  author={张超 and 梁杰 and 其他},
+  journal={软件学报},
+  volume={33},
+  number={00},
+  year={2022},
+  note={Note: Relevant for understanding sanitizer usage in fuzzing}
+}

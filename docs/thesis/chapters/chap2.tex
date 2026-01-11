@@ -1,0 +1,82 @@
+\chapter{国内外研究现状}
+
+内存安全作为软件安全领域的核心议题，其研究历程与攻击技术、防护机制以及编译器基础设施的发展紧密相连。纵观现有研究体系，国内外关于内存安全 Sanitizer 及其与编译器优化交互作用的研究大致可分为三个阶段：内存安全漏洞的系统性分析、防护机制的技术演进，以及近年来对 Sanitizer 与编译器优化相互影响的深入探索。
+
+本章将从上述多个维度对相关研究进展进行系统回顾，并分析现有技术的局限性。
+
+\section{内存安全问题的长期性与复杂性}
+
+内存安全漏洞的产生既有历史原因，也源于系统软件设计的结构性因素。Szekeres 等人在 IEEE S\&P 上发表的综述论文《SoK: Eternal War in Memory》从攻击者视角系统梳理了内存破坏漏洞的演化路径、利用技术及防护策略 \cite{szekeres2013eternal}。该研究指出，尽管现代操作系统已广泛采用地址空间布局随机化（ASLR）、栈保护（Stack Canary）、数据执行保护（DEP）等硬件与系统级防护机制，但内存破坏漏洞的数量并未显著减少，其形式反而随着防御技术的升级而变得更加隐蔽和复杂。
+
+国内学者也对这一领域进行了深入探索。武成岗等人对 C/C++ 程序内存安全漏洞检测技术进行了全面综述 \cite{wu2018memorysafety}，通过分析指出了当前面临的主要挑战：
+\begin{itemize}
+    \item \textbf{检测成本高昂}：高精度的分析往往伴随着指数级的时间复杂度，误报率难以有效控制；
+    \item \textbf{覆盖率不足}：实际软件规模庞大，传统的静态分析技术难以覆盖所有动态执行路径；
+    \item \textbf{部署困难}：动态检测技术通常带来巨大的运行时开销，阻碍了其在生产环境中的部署应用。
+\end{itemize}
+这些研究共同强调了高效动态检测技术（如 Sanitizer）在现代软件开发周期（SDLC）中的重要性，同时也指出其性能开销是制约实际应用的关键瓶颈。
+
+\section{Sanitizer 技术的理论基础与工程实践}
+
+Sanitizer 作为编译器集成的动态检测框架，自 2012 年 Google 推出 AddressSanitizer (ASan) 以来便成为安全研究的热点。ASan 创新性地采用了\textbf{影子内存（Shadow Memory）}与\textbf{红区（Redzone）}技术来检测内存越界访问。由于其高效的映射算法和便捷的部署方式（只需添加编译选项），ASan 被广泛应用于 Chrome、Android、Linux 内核等大型软件项目的测试与构建中 \cite{serebryany2012asan}。
+
+% 这里建议之后插入一张 ASan 影子内存映射的原理图
+% \begin{figure}[htbp]
+%     \centering
+%     \includegraphics[width=0.8\textwidth]{figures/asan_mapping.png}
+%     \caption{AddressSanitizer 影子内存映射机制示意图}
+%     \label{fig:asan_mapping}
+% \end{figure}
+
+随后，LLVM 社区基于类似的原理，陆续开发了多种专用 Sanitizer，构建了完整的动态检测家族：
+\begin{itemize}
+    \item \textbf{UndefinedBehaviorSanitizer (\texttt{UBSan})}：主要用于检测 C/C++ 标准中的未定义行为，如整数除零、无效移位、有符号整数溢出和空指针解引用等 \cite{ubsan_docs}；
+    \item \textbf{ThreadSanitizer (\texttt{TSan})}：专注于多线程环境下的数据竞争（Data Race）和死锁检测；
+    \item \textbf{MemorySanitizer (\texttt{MSan})}：专门针对未初始化内存读取（Uninitialized Memory Read）的检测工具；
+    \item \textbf{\texttt{HWASan} / \texttt{ASan-Lite}}：面向 ARM64 平台的、利用硬件辅助特性的轻量级检测方案，旨在解决移动端的性能瓶颈；
+    \item \textbf{\texttt{CFISan} / \texttt{SafeStack}}：专注于控制流完整性（CFI）和栈空间安全的防护机制。
+\end{itemize}
+
+Sanitizer 的核心技术在于\textbf{编译器插桩（Compiler Instrumentation）}——即在 LLVM 中间表示（IR）层面自动插入额外的检测逻辑。因此，编译优化的顺序、插桩的具体位置以及后续优化 Pass 的行为，对 Sanitizer 的正确性和性能具有决定性影响。
+
+\section{Sanitizer 运行时开销的实证研究}
+
+尽管检测能力强大，但高昂的性能开销始终是阻碍 Sanitizer 大规模应用的主要障碍。Google 及学术界的多项实证评估表明：
+\begin{itemize}
+    \item ASan 的典型运行时开销约为 $2\times$--$3\times$，内存开销约为 $2\times$--$4\times$；
+    \item MSan 的运行时开销可能达到 $3\times$--$4\times$；
+    \item TSan 在并发密集型场景下，由于大量的锁竞争分析，开销甚至可达 $5\times$--$15\times$。
+\end{itemize}
+
+Vintila 等人在 2025 年 IEEE S\&P 上发表的研究从实际软件工程角度出发，系统评估了现有 Sanitizer 技术的有效性，指出高开销与高误报率共同限制了 Sanitizer 的普及 \cite{vintila2025evaluating}。该研究还发现，不当的插桩位置会进一步放大性能开销并产生大量冗余检查。例如，对死代码（Dead Code）或已被证明安全的内存访问进行插桩，是造成性能浪费的主要原因。因此，优化插桩策略成为降低开销的重要研究方向。
+
+国内学者赵荣彩等人也系统总结了基于 LLVM 的程序分析与优化技术 \cite{wang2021llvm}，指出 LLVM IR 优化流程的复杂性对任何插桩 Pass 的执行位置都有严格要求，强调了插桩策略对最终代码性能的直接影响。
+
+\section{编译器优化对 Sanitizer 机制的干扰研究}
+
+近年来，越来越多的研究开始关注编译器优化对安全工具的负面影响。研究发现，编译器优化不仅影响程序语义，还可能破坏 Sanitizer 的检测机制，具体表现为：
+\begin{itemize}
+    \item \textbf{无用代码消除 (\texttt{DCE}) 和全局值编号 (\texttt{GVN})}：可能错误地认为安全检查代码是“无用的”并将其移除；
+    \item \textbf{跨基本块优化}：可能导致检查点位置发生偏差，无法保护目标指令；
+    \item \textbf{循环向量化 (\texttt{LoopVectorize}) 和循环展开 (\texttt{LoopUnroll})}：改变了内存访问模式，导致原有的边界检查失效；
+    \item \textbf{指令组合 (\texttt{InstCombine})}：可能修改检查代码的结构，使其语义发生变化。
+\end{itemize}
+
+Isemann 等人在 PLDI 2023 上发表的《Don't Look UB》一文中，系统阐述了 \textbf{Sanitizer-Eliding} 问题 \cite{isemann2023dontlookub}。他们通过形式化验证和实证分析，证明了某些优化 Pass 会在保持程序语义不变的前提下（基于 UB 假设），移除 Sanitizer 插桩代码，从而导致安全保障失效。这项工作首次揭示了 Sanitizer 与编译器优化之间的潜在冲突，为本课题提供了重要的理论依据。
+
+此外，Xu 等人在 USENIX Security 2023 上的研究进一步指出，编译器自身在优化过程中也可能引入新的安全缺陷 \cite{xu2023silent}，这表明安全工具不能盲目信任编译器的优化结果，需要更加谨慎地选择与优化流程的集成方式。
+
+\section{插桩优化与 LTO 技术演进}
+
+为解决上述问题，研究者们提出了多种优化方案。在选择性检测技术方面，LiteRSan (2025) 利用 Rust/C++ 的语义特性，通过静态分析减少不必要的插桩点 \cite{xia2025litersan}；SoftBound+CETS 通过软件实现的指针元数据验证机制降低运行时负担 \cite{nagarakatte2009softbound, nagarakatte2010cets}；Fat Pointer 技术则通过扩展指针结构来减少动态检查开销 \cite{zhou2023fatpointers}。然而，这些方法大多关注于插桩逻辑本身的简化，尚未系统探索“插桩位置”这一维度的优化潜力。
+
+另一方面，链接时优化（LTO）和 ThinLTO 是 LLVM 近年来重要的演进方向 \cite{johnson2017thinlto}。LTO 能够提供全程序（Whole-Program）语义信息，为插桩优化带来了新的机遇：
+\begin{itemize}
+    \item 指针别名分析更加精确，可减少保守插桩；
+    \item 能够实现跨模块的插桩代码去重和合并。
+\end{itemize}
+目前，Google 等企业已开始尝试在 LTO 阶段进行 Sanitizer 插桩以降低开销 \cite{kern2024secure}。然而，关于 LTO 插桩位置对检测能力具体影响的公开研究仍然较少，这正是本课题拟重点突破的方向。
+
+\section{本章小结}
+
+综合分析现有文献，可以看出当前研究在内存安全理论、Sanitizer 实现技术和编译器优化流程等方面已取得了显著进展。然而，针对 \textbf{LLVM Pass Pipeline 中 Sanitizer 插桩位置} 的系统性研究仍存在空白，特别是缺乏对不同插桩位置在性能、体积和安全性（防止优化移除）三个维度上的量化对比。本课题将致力于填补这一空白，构建一套科学的插桩位置优化框架。

@@ -1,0 +1,20 @@
+# --- LaTeX 忽略文件 (防止垃圾文件污染 Git) ---
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.fls
+*.fdb_latexmk
+*.pdf
+!docs/thesis/final_thesis.pdf  # (可选) 只保留最终生成的 PDF
+
+# --- LLVM 编译产物 (之前可能没加，加上保险) ---
+llvm-project/build/
+*.o
+*.a
+*.dylib
+.DS_Store

@@ -1,0 +1,65 @@
+\documentclass[12pt,a4paper,oneside]{ctexbook}
+
+\usepackage{geometry}
+\geometry{a4paper, margin=2.5cm}
+
+\usepackage{setspace}
+\onehalfspacing
+
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue}
+
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb}
+\usepackage{float}
+\usepackage{indentfirst}
+\setlength{\parindent}{2em}
+
+% 导入biblatex宏包，使用biber后端和国标GB/T 7714-2015样式
+\usepackage[backend=biber, style=gb7714-2015, citestyle=numeric]{biblatex} 
+
+% 声明你的参考文献文件。请确保 refs.bib 和你的.tex文件在同一个目录下
+\addbibresource{refs.bib}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    {\huge \textbf{本科毕业论文}}\vspace{2.5cm}
+
+    {\huge \bfseries 动态程序分析工具Sanitizer在LLVM\\[8pt]编译器
+    优化流程中的最佳插入位置研究}\vspace{2.8cm}
+
+    % 调整这里的信息栏字号
+    {\Large
+    \begin{tabular}{rl}
+        \textbf{姓\qquad 名：} & 李东盛 \\
+        \textbf{学\qquad 院：} & 软件学院 \\
+        \textbf{专\qquad 业：} & 软件工程 \\
+        \textbf{指导教师：} & 杨秋辉 \\
+        \textbf{完成日期：} & 2025年4月30日 \\
+    \end{tabular}
+    }
+
+    \vfill
+\end{titlepage}
+\frontmatter
+\tableofcontents
+
+\include{preface/abstract_cn}
+\include{preface/abstract_en}
+
+\mainmatter
+\include{chapters/chap1}
+\include{chapters/chap2}
+\include{chapters/chap3}
+\include{chapters/chap4}
+\include{chapters/chap5}
+\include{chapters/chap6}
+
+\backmatter
+
+\nocite{*} % 强制包含 refs.bib 中的所有条目，即使它们未被 \cite 过
+\printbibliography
+
+\end{document}
