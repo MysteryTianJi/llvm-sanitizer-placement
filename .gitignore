@@ -17,4 +17,4 @@ llvm-project/build/
 *.o
 *.a
 *.dylib
-.DS_Store
+.DS_Storevenv/
