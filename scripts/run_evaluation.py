@@ -19,7 +19,7 @@ CHARTS_DIR = os.path.join(PROJECT_ROOT, "docs", "figures")
 os.makedirs(CHARTS_DIR, exist_ok=True)
 
 # 分类测试集
-PERF_BENCHMARKS = ["matrix_mult.c", "sieve.c", "n_queens.c", "quicksort.c", "floyd_warshall.c"]
+PERF_BENCHMARKS = ["matrix_mult.c", "sieve.c", "n_queens.c", "quicksort.c", "floyd_warshall.c", "cjson_bench.c", "sqlite_bench.c", "coremark_bench.c"]
 SEC_BENCHMARKS = ["vuln_uaf.c", "vuln_oob.c", "vuln_dfree.c", "vuln_eliding.c"]
 LOCATIONS = ["NONE", "PRE", "MID", "POST"]
 
@@ -39,30 +39,48 @@ def compile_and_link(test_file, location, sdk_path, env):
     res_l = subprocess.run(link_cmd, env=env, stderr=subprocess.PIPE, text=True)
     return res_l.returncode == 0
 
-def measure_performance(test_file, location):
+def measure_performance(test_file, location, total_runs=3):
+    """
+    total_runs 默认为 21 次：
+    - 第 1 次用于 Warm-up (预热)，数据丢弃。
+    - 后 20 次用于正式计时，取中位数以保证数据稳定性。
+    """
     env = os.environ.copy()
-    if location != "NONE": env["THESIS_ASAN_LOC"] = location
-    else: env.pop("THESIS_ASAN_LOC", None)
+    if location != "NONE": 
+        env["THESIS_ASAN_LOC"] = location
+    else: 
+        env.pop("THESIS_ASAN_LOC", None)
             
     sdk_path = get_sdk_path()
     
+    # 1. 编译阶段 (编译时间通常波动较小，测一次即可，如有需要也可改为多次)
     start_compile = time.perf_counter()
-    if not compile_and_link(test_file, location, sdk_path, env): return None
+    if not compile_and_link(test_file, location, sdk_path, env): 
+        return None
     compile_time = time.perf_counter() - start_compile
     
     binary_size = os.path.getsize("test_exec") if os.path.exists("test_exec") else 0
 
+    # 2. 运行阶段
     run_times = []
-    for _ in range(3):
+    
+    # --- 预热运行 (Warm-up) ---
+    if os.path.exists("./test_exec"):
+        subprocess.run(["./test_exec"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    
+    # --- 正式采样 ---
+    for _ in range(total_runs - 1):
         start_run = time.perf_counter()
         subprocess.run(["./test_exec"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         run_times.append(time.perf_counter() - start_run)
     
+    # 3. 清理现场
     if os.path.exists("test.o"): os.remove("test.o")
     if os.path.exists("test_exec"): os.remove("test_exec")
     
     return {
-        "run_time": statistics.mean(run_times), 
+        # 使用中位数 (Median) 替代平均值，更符合学术论文对性能波动的处理标准
+        "run_time": statistics.median(run_times), 
         "compile_time": compile_time, 
         "bin_size": binary_size
     }
@@ -85,53 +103,74 @@ def verify_security(test_file, location):
     else: return "❌ Missed"
 
 # ==========================================
-# 绘图模块
+# 绘图模块 (归一化 + 防崩修复版)
 # ==========================================
 def generate_charts(perf_results):
-    print(f"\n📈 正在生成可视化图表并保存至: {CHARTS_DIR} ...")
+    print(f"\n📈 正在生成高级归一化图表并保存至: {CHARTS_DIR} ...")
     
-    labels = PERF_BENCHMARKS
-    x = np.arange(len(labels))
-    width = 0.2
+    # 【核心修复】自动过滤掉编译失败的 Benchmark（比如 CoreMark）
+    valid_labels = [b for b in PERF_BENCHMARKS if perf_results.get(b) and perf_results[b].get("NONE") is not None]
     
-    colors = ['#95a5a6', '#e74c3c', '#f39c12', '#3498db']
-    
-    def plot_metric(metric_key, title, ylabel, filename):
-        none_vals = [perf_results[b]["NONE"][metric_key] if perf_results[b].get("NONE") else 0 for b in labels]
-        pre_vals  = [perf_results[b]["PRE"][metric_key] if perf_results[b].get("PRE") else 0 for b in labels]
-        mid_vals  = [perf_results[b]["MID"][metric_key] if perf_results[b].get("MID") else 0 for b in labels]
-        post_vals = [perf_results[b]["POST"][metric_key] if perf_results[b].get("POST") else 0 for b in labels]
-
-        fig, ax = plt.subplots(figsize=(10, 6))
+    if not valid_labels:
+        print("❌ 没有成功的测试数据，无法生成图表！")
+        return
         
-        ax.bar(x - 1.5*width, none_vals, width, label='NONE', color=colors[0])
-        ax.bar(x - 0.5*width, pre_vals,  width, label='PRE-OPT', color=colors[1])
-        ax.bar(x + 0.5*width, mid_vals,  width, label='MID-OPT', color=colors[2])
-        ax.bar(x + 1.5*width, post_vals, width, label='POST-OPT', color=colors[3])
+    labels = valid_labels
+    x = np.arange(len(labels))
+    width = 0.25 # 稍微调宽一点，因为 NONE 不画实体柱子了
+    
+    # 颜色搭配 (学术风: 红色, 橘色, 蓝色)
+    colors = ['#e74c3c', '#f39c12', '#3498db']
+    
+    def plot_normalized_metric(metric_key, title, ylabel, filename):
+        pre_ratios, mid_ratios, post_ratios = [], [], []
+        
+        for b in labels:
+            base_val = perf_results[b]["NONE"][metric_key]
+            if base_val == 0: base_val = 1 # 防止除以 0
+            
+            # 安全获取：如果某个阶段失败，则开销记为 0
+            pre_val = perf_results[b].get("PRE")
+            mid_val = perf_results[b].get("MID")
+            post_val = perf_results[b].get("POST")
+            
+            pre_ratios.append(pre_val[metric_key] / base_val if pre_val else 0)
+            mid_ratios.append(mid_val[metric_key] / base_val if mid_val else 0)
+            post_ratios.append(post_val[metric_key] / base_val if post_val else 0)
 
-        ax.set_ylabel(ylabel, fontsize=12)
-        ax.set_title(title, fontsize=14, fontweight='bold')
+        fig, ax = plt.subplots(figsize=(12, 6))
+        
+        # 画出 NONE 的 1.0x 基准虚线
+        ax.axhline(y=1.0, color='gray', linestyle='--', linewidth=1.5, label='Baseline (NONE = 1.0x)')
+        
+        # 画插桩后的倍数柱子
+        ax.bar(x - width, pre_ratios,  width, label='PRE-OPT', color=colors[0], edgecolor='black')
+        ax.bar(x,         mid_ratios,  width, label='MID-OPT', color=colors[1], edgecolor='black')
+        ax.bar(x + width, post_ratios, width, label='POST-OPT', color=colors[2], edgecolor='black')
+
+        ax.set_ylabel(ylabel, fontsize=12, fontweight='bold')
+        ax.set_title(title, fontsize=15, fontweight='bold')
         ax.set_xticks(x)
-        ax.set_xticklabels(labels, rotation=15, ha="right", fontsize=10)
+        ax.set_xticklabels(labels, rotation=20, ha="right", fontsize=11)
         ax.legend()
-        ax.grid(axis='y', linestyle='--', alpha=0.7)
+        ax.grid(axis='y', linestyle=':', alpha=0.6)
 
         plt.tight_layout()
         filepath = os.path.join(CHARTS_DIR, filename)
         plt.savefig(filepath, dpi=300)
         plt.close()
 
-    plot_metric("run_time", "Runtime Performance Overhead by ASan Placement", "Execution Time (Seconds)", "fig_runtime_overhead.png")
-    plot_metric("bin_size", "Binary Size Bloat by ASan Placement", "Binary Size (Bytes)", "fig_binary_size.png")
-    plot_metric("compile_time", "Compilation Time Overhead", "Compile Time (Seconds)", "fig_compile_time.png")
+    plot_normalized_metric("run_time", "Normalized Execution Time Overhead", "Execution Time Ratio (vs NONE)", "fig_runtime_normalized.png")
+    plot_normalized_metric("bin_size", "Normalized Binary Size Bloat", "Binary Size Ratio (vs NONE)", "fig_binsize_normalized.png")
+    plot_normalized_metric("compile_time", "Normalized Compilation Time Overhead", "Compile Time Ratio (vs NONE)", "fig_compile_normalized.png")
     
-    print("✅ 图表生成完毕！")
+    print("✅ 归一化图表生成完毕！")
 
 if __name__ == "__main__":
     print("🚀 启动全自动化评估平台 (性能四大维度 + 安全有效性 + 可视化)...\n")
     
     # 1. 跑性能
-    print("⏳ [1/2] 正在运行性能与体积测试 (约需2-3分钟)...")
+    print("⏳ [1/2] 正在运行性能与体积测试 (约需20-30分钟)...")
     perf_results = {b: {} for b in PERF_BENCHMARKS}
     for b_name in PERF_BENCHMARKS:
         test_file = os.path.join(PROJECT_ROOT, "benchmarks", b_name)
